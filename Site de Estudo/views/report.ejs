@@ -1,0 +1,150 @@
+<%- include('partials/head') %>
+<section class="page-header">
+  <div>
+    <h1><i class="ph-duotone ph-chart-bar"></i> Relatório de estudos</h1>
+    <p>Acompanhe o seu ritmo de estudos e aproveitamento no período.</p>
+  </div>
+</section>
+
+<section class="card">
+  <h2><i class="ph-duotone ph-funnel"></i> Filtros do relatório</h2>
+  <form method="GET" action="/report" class="form-grid">
+    <label>
+      <span>Data inicial</span>
+      <input type="date" name="start_date" value="<%= filters.start_date || '' %>" required />
+    </label>
+    <label>
+      <span>Data final</span>
+      <input type="date" name="end_date" value="<%= filters.end_date || '' %>" required />
+    </label>
+    <label>
+      <span>Matéria (opcional)</span>
+      <select name="subject_id">
+        <option value="">📚 Todas</option>
+        <% subjects.forEach(function(s) { %>
+          <option value="<%= s.id %>" <%= String(filters.subject_id) === String(s.id) ? 'selected' : '' %>><%= s.name %></option>
+        <% }); %>
+      </select>
+    </label>
+    <button type="submit" class="btn-primary" style="align-self:flex-end;"><i class="ph-bold ph-chart-line-up"></i> Gerar</button>
+  </form>
+</section>
+
+<% if (chartData) { %>
+  <section class="cards-grid">
+    <article class="stat-card" style="grid-column: span 4; border-left: 3px solid var(--primary);">
+      <h2>Horas no período</h2>
+      <p class="stat-main"><%= chartData.totalPeriodHoursFmt %></p>
+    </article>
+    <article class="stat-card" style="grid-column: span 4; border-left: 3px solid var(--accent);">
+      <h2>Questões no período</h2>
+      <p class="stat-main"><%= chartData.totalPeriodQuestions %></p>
+    </article>
+    <article class="stat-card" style="grid-column: span 4; border-left: 3px solid var(--success);">
+      <h2>Aproveitamento</h2>
+      <p class="stat-main"><%= chartData.overallAccuracy %></p>
+      <p class="stat-sub"><%= chartData.totalPeriodCorrect %> acertos de <%= chartData.totalPeriodQuestions %> questões</p>
+    </article>
+  </section>
+
+  <section class="card">
+    <h2><i class="ph-duotone ph-trend-up"></i> Curva de horas estudadas</h2>
+    <div style="margin: 1.25rem 0; padding: 1rem; background: var(--bg-soft); border-radius: var(--radius); border: 1px solid var(--panel-border);">
+      <canvas id="hoursChart" height="80"></canvas>
+    </div>
+
+    <h2 style="margin-top: 2.5rem;"><i class="ph-duotone ph-check-circle"></i> Evolução de questões e acertos</h2>
+    <div style="margin: 1.25rem 0; padding: 1rem; background: var(--bg-soft); border-radius: var(--radius); border: 1px solid var(--panel-border);">
+      <canvas id="questionsChart" height="80"></canvas>
+    </div>
+
+    <h2 style="margin-top: 2.5rem;"><i class="ph-duotone ph-table"></i> Detalhamento diário</h2>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Tempo estudado</th>
+            <th>Questões feitas</th>
+            <th>Acertos</th>
+            <th>Aproveitamento</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% chartData.labels.forEach(function(d, i) { %>
+            <tr>
+              <td><%= d %></td>
+              <td><%= chartData.displayHours[i] %></td>
+              <td><%= chartData.dataQuestions[i] %></td>
+              <td><%= chartData.dataCorrect[i] %></td>
+              <td><span class="badge badge-success"><%= chartData.displayAccuracy[i] %></span></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    (function () {
+      const style = getComputedStyle(document.documentElement);
+      const c = {
+        primary: style.getPropertyValue('--primary').trim(),
+        accent: style.getPropertyValue('--accent').trim(),
+        success: style.getPropertyValue('--success').trim(),
+        text: style.getPropertyValue('--text-muted').trim(),
+        grid: 'rgba(148, 163, 184, 0.15)'
+      };
+
+      const ctxHours = document.getElementById("hoursChart").getContext("2d");
+      new Chart(ctxHours, {
+        type: "line",
+        data: {
+          labels: <%- JSON.stringify(chartData.labels) %>,
+          datasets: [{
+            label: "Horas estudadas",
+            data: <%- JSON.stringify(chartData.dataHours) %>,
+            borderColor: c.primary,
+            backgroundColor: c.primary + '33',
+            fill: true,
+            tension: 0.4,
+            borderWidth: 2,
+            pointRadius: 3
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { labels: { color: c.text } } },
+          scales: {
+            y: { beginAtZero: true, grid: { color: c.grid }, ticks: { color: c.text } },
+            x: { grid: { color: c.grid }, ticks: { color: c.text } }
+          }
+        }
+      });
+
+      const ctxQuestions = document.getElementById("questionsChart").getContext("2d");
+      new Chart(ctxQuestions, {
+        type: "bar",
+        data: {
+          labels: <%- JSON.stringify(chartData.labels) %>,
+          datasets: [
+            { label: "Questões feitas", data: <%- JSON.stringify(chartData.dataQuestions) %>, backgroundColor: c.accent, borderRadius: 4 },
+            { label: "Acertos", data: <%- JSON.stringify(chartData.dataCorrect) %>, backgroundColor: c.success, borderRadius: 4 }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { labels: { color: c.text } } },
+          scales: {
+            y: { beginAtZero: true, grid: { color: c.grid }, ticks: { color: c.text } },
+            x: { grid: { color: c.grid }, ticks: { color: c.text } }
+          }
+        }
+      });
+    })();
+  </script>
+<% } else { %>
+  <p class="hint">Escolha a data inicial e final e clique em Gerar para ver o relatório.</p>
+<% } %>
+<%- include('partials/foot') %>

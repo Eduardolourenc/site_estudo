@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title><%= typeof pageTitle !== 'undefined' ? pageTitle + ' · Focus' : 'Focus · Monitoramento de Estudos' %></title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark light" />
+  <meta name="theme-color" content="#0b1120" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+  <link rel="stylesheet" href="/styles.css" />
+
+  <script>
+    // Aplica o tema salvo antes da primeira pintura, evitando "flash" de tema errado
+    (function () {
+      try {
+        var t = localStorage.getItem('focus-theme');
+        if (t === 'light') document.documentElement.setAttribute('data-theme', 'light');
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body class="animate__animated animate__fadeIn animate__faster">
+  <header class="top-bar">
+    <div class="brand">
+      <span class="brand-mark"><i class="ph-fill ph-brain"></i></span>
+      <div>
+        <h1>Focus</h1>
+        <span class="tag">Monitoramento de estudos</span>
+      </div>
+      <% if (typeof streak !== 'undefined') { %>
+        <div title="Dias seguidos batendo a meta" class="streak-badge <%= goalMetToday ? 'met' : 'not-met' %>">
+          <i class="ph-fill ph-fire"></i> <%= streak %>
+        </div>
+      <% } %>
+    </div>
+
+    <button id="nav-toggle" class="nav-toggle" type="button" aria-label="Abrir menu">
+      <i class="ph-bold ph-list"></i>
+    </button>
+
+    <nav class="main-nav" id="main-nav">
+      <a href="/dashboard"><i class="ph ph-squares-four"></i> Dashboard</a>
+      <a href="/study"><i class="ph ph-timer"></i> Estudar</a>
+      <a href="/pomodoro"><i class="ph ph-clock"></i> Pomodoro</a>
+      <a href="/history"><i class="ph ph-clock-counter-clockwise"></i> Histórico</a>
+      <a href="/subjects"><i class="ph ph-books"></i> Matérias</a>
+      <a href="/checklist"><i class="ph ph-check-square"></i> Checklist</a>
+      <a href="/report"><i class="ph ph-chart-bar"></i> Relatórios</a>
+      <a href="/calendar"><i class="ph ph-calendar"></i> Calendário</a>
+      <a href="/settings"><i class="ph ph-gear"></i> Metas</a>
+    </nav>
+
+    <button id="theme-toggle" class="icon-btn" type="button" title="Alternar tema" aria-label="Alternar tema claro/escuro">
+      <i class="ph-fill ph-sun"></i>
+    </button>
+  </header>
+
+  <main class="container">

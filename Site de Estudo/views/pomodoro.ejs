@@ -1,0 +1,150 @@
+<%- include('partials/head') %>
+<section class="page-header">
+  <div>
+    <h1><i class="ph-duotone ph-clock"></i> Modo Pomodoro</h1>
+    <p>Concentre-se em intervalos curtos e maximize sua produtividade. Ajuste seus tempos conforme precisar.</p>
+  </div>
+</section>
+
+<div class="layout-two-cols">
+  <section class="card focus-card text-center">
+    <div class="pomodoro-timer-container">
+      <h2 id="pomodoro-status" style="justify-content:center; color: var(--primary-strong);">Foco (<span id="status-mins">25</span> min)</h2>
+      <div class="focus-timer">
+        <span id="pomo-display" class="timer-display" style="font-variant-numeric: tabular-nums;">25:00</span>
+      </div>
+
+      <div class="timer-buttons">
+        <button class="btn-secondary" id="btn-pomo-start"><i class="ph-fill ph-play"></i> Iniciar</button>
+        <button class="btn-secondary" id="btn-pomo-pause" style="display:none;"><i class="ph-fill ph-pause"></i> Pausar</button>
+        <button class="btn-danger" id="btn-pomo-reset"><i class="ph-fill ph-stop"></i> Reiniciar</button>
+      </div>
+      <div class="mode-switch">
+        <button class="btn-secondary" id="btn-mode-focus">Foco</button>
+        <button class="btn-secondary" id="btn-mode-short">Pausa curta</button>
+        <button class="btn-secondary" id="btn-mode-long">Pausa longa</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2><i class="ph-duotone ph-gear"></i> Ajustes de tempo</h2>
+    <div class="form-group">
+      <label>Foco (minutos)</label>
+      <input type="number" id="input-focus" value="25" min="1" max="120">
+    </div>
+    <div class="form-group">
+      <label>Pausa curta (minutos)</label>
+      <input type="number" id="input-short" value="5" min="1" max="60">
+    </div>
+    <div class="form-group">
+      <label>Pausa longa (minutos)</label>
+      <input type="number" id="input-long" value="15" min="1" max="60">
+    </div>
+    <button id="btn-save-settings" class="btn-primary btn-block"><i class="ph-bold ph-check"></i> Salvar tempos</button>
+  </section>
+</div>
+
+<audio id="alarm-sound" src="https://assets.mixkit.co/active_storage/sfx/989/989-preview.mp3" preload="auto"></audio>
+
+<script>
+  let pomoTimer = null;
+  let currentMode = 'focus';
+  const modes = { focus: 25 * 60, short: 5 * 60, long: 15 * 60 };
+  let pomoTimeRemaining = modes.focus;
+
+  const display = document.getElementById('pomo-display');
+  const status = document.getElementById('pomodoro-status');
+  const btnStart = document.getElementById('btn-pomo-start');
+  const btnPause = document.getElementById('btn-pomo-pause');
+  const btnReset = document.getElementById('btn-pomo-reset');
+  const alarmSound = document.getElementById('alarm-sound');
+
+  const inputFocus = document.getElementById('input-focus');
+  const inputShort = document.getElementById('input-short');
+  const inputLong = document.getElementById('input-long');
+  const btnSaveSettings = document.getElementById('btn-save-settings');
+
+  function updatePomoDisplay() {
+    const m = Math.floor(pomoTimeRemaining / 60).toString().padStart(2, '0');
+    const s = (pomoTimeRemaining % 60).toString().padStart(2, '0');
+    display.textContent = m + ':' + s;
+    document.title = m + ':' + s + ' - Pomodoro';
+  }
+
+  function playAlertSound() {
+    try { alarmSound.currentTime = 0; alarmSound.play(); } catch (err) { console.log('Erro ao tocar áudio', err); }
+  }
+
+  function setMode(mode) {
+    currentMode = mode;
+    pomoTimeRemaining = modes[mode];
+    let modeName = 'Foco';
+    if (mode === 'short') modeName = 'Pausa curta';
+    if (mode === 'long') modeName = 'Pausa longa';
+    status.innerHTML = modeName + ' (<span id="status-mins">' + (modes[mode] / 60) + '</span> min)';
+    clearInterval(pomoTimer);
+    pomoTimer = null;
+    btnStart.style.display = 'inline-flex';
+    btnPause.style.display = 'none';
+    updatePomoDisplay();
+  }
+
+  btnStart.addEventListener('click', () => {
+    if (pomoTimer) return;
+    btnStart.style.display = 'none';
+    btnPause.style.display = 'inline-flex';
+
+    alarmSound.play().then(() => { alarmSound.pause(); alarmSound.currentTime = 0; }).catch(() => {});
+
+    pomoTimer = setInterval(() => {
+      pomoTimeRemaining--;
+      updatePomoDisplay();
+
+      if (pomoTimeRemaining <= 0) {
+        clearInterval(pomoTimer);
+        pomoTimer = null;
+        playAlertSound();
+
+        setTimeout(() => {
+          if (typeof showToast === 'function') {
+            showToast(currentMode === 'focus' ? 'Tempo esgotado! Hora de uma pausa.' : 'Tempo esgotado! Hora de voltar ao foco.', 'ph-bell-ringing');
+          }
+          setMode(currentMode === 'focus' ? 'short' : 'focus');
+          if (confirm('Deseja iniciar o próximo ciclo agora mesmo?')) {
+            btnStart.click();
+          }
+        }, 500);
+      }
+    }, 1000);
+  });
+
+  btnPause.addEventListener('click', () => {
+    clearInterval(pomoTimer);
+    pomoTimer = null;
+    btnStart.style.display = 'inline-flex';
+    btnPause.style.display = 'none';
+  });
+
+  btnReset.addEventListener('click', () => setMode(currentMode));
+
+  document.getElementById('btn-mode-focus').addEventListener('click', () => setMode('focus'));
+  document.getElementById('btn-mode-short').addEventListener('click', () => setMode('short'));
+  document.getElementById('btn-mode-long').addEventListener('click', () => setMode('long'));
+
+  btnSaveSettings.addEventListener('click', () => {
+    const pFocus = parseInt(inputFocus.value) || 25;
+    const pShort = parseInt(inputShort.value) || 5;
+    const pLong = parseInt(inputLong.value) || 15;
+
+    modes.focus = pFocus * 60;
+    modes.short = pShort * 60;
+    modes.long = pLong * 60;
+
+    setMode(currentMode);
+    if (typeof showToast === 'function') showToast('Tempos atualizados com sucesso!', 'ph-check-circle');
+  });
+
+  updatePomoDisplay();
+</script>
+<%- include('partials/foot') %>

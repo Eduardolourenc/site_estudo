@@ -1,0 +1,52 @@
+<%- include('partials/head') %>
+<section class="page-header">
+  <div>
+    <h1><i class="ph-duotone ph-calendar"></i> Calendário de estudos</h1>
+    <p>Acompanhe seus dias mais produtivos e veja se bateu as metas diárias.</p>
+  </div>
+</section>
+
+<section class="card">
+  <div class="calendar-legend" style="justify-content:flex-end;">
+    <div class="item"><span class="legend-dot" style="background:#10b981;"></span> Meta atingida (&ge; <%= dailyGoal %>h)</div>
+    <div class="item"><span class="legend-dot" style="background:#6366f1;"></span> Menos que a meta</div>
+  </div>
+  <div id="calendar" style="min-height: 500px;"></div>
+</section>
+
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var calendarEl = document.getElementById('calendar');
+    var rawData = <%- JSON.stringify(data) %>;
+    var dailyGoal = <%= dailyGoal %>;
+
+    var events = rawData.map(function(d) {
+      var hrs = Math.floor(d.total_hours);
+      var mins = Math.round((d.total_hours - hrs) * 60);
+      var timeStr = hrs + 'h ' + mins + 'm';
+      var isGoalAchieved = d.total_hours >= dailyGoal;
+
+      return {
+        title: timeStr,
+        start: d.date,
+        allDay: true,
+        backgroundColor: isGoalAchieved ? '#10b981' : '#6366f1',
+        textColor: '#ffffff'
+      };
+    });
+
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+      initialView: 'dayGridMonth',
+      locale: 'pt-br',
+      events: events,
+      height: 'auto',
+      firstDay: 1,
+      headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth' },
+      buttonText: { today: 'Hoje', month: 'Mês' }
+    });
+    calendar.render();
+  });
+</script>
+<%- include('partials/foot') %>

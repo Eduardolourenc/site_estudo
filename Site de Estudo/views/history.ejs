@@ -1,0 +1,73 @@
+<%- include('partials/head') %>
+<section class="page-header">
+  <div>
+    <h1><i class="ph-duotone ph-clock-counter-clockwise"></i> Histórico de estudos</h1>
+    <p>Veja todas as sessões registradas, edite ou exclua conforme necessário.</p>
+  </div>
+  <div class="stat-card" style="grid-column:unset; padding:1rem 1.5rem; min-width:170px;">
+    <p class="stat-sub" style="margin:0 0 0.3rem;"><i class="ph-fill ph-clock"></i> Total filtrado</p>
+    <strong class="stat-main" style="font-size:1.5rem;"><%= totalHoursFilter %></strong>
+  </div>
+</section>
+
+<section class="card">
+  <form method="GET" action="/history" class="form-inline" style="max-width: 500px; margin-bottom: 1.75rem;">
+    <select name="subject_id">
+      <option value="">📚 Todas as matérias</option>
+      <% subjects.forEach(function(s) { %>
+        <option value="<%= s.id %>" <%= String(selectedSubjectId) === String(s.id) ? 'selected' : '' %>><%= s.name %></option>
+      <% }); %>
+    </select>
+    <button type="submit" class="btn-secondary"><i class="ph-bold ph-funnel"></i> Filtrar</button>
+    <% if (selectedSubjectId) { %>
+      <a href="/history" class="link-inline">Limpar filtro</a>
+    <% } %>
+  </form>
+
+  <% if (sessions.length === 0) { %>
+    <div class="empty-state">
+      <i class="ph-duotone ph-magnifying-glass"></i>
+      <strong>Nenhum registro encontrado</strong>
+      <span class="hint">Ajuste o filtro ou registre uma nova sessão de estudo.</span>
+    </div>
+  <% } else { %>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Matéria</th>
+            <th>Tempo</th>
+            <th>Questões</th>
+            <th>Acertos</th>
+            <th>Aproveitamento</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% sessions.forEach(function(s) { %>
+            <tr>
+              <td><%= s.date %></td>
+              <td><span class="subject-tag"><span class="subject-dot" style="background:<%= s.color %>;"></span><%= s.subject_name %></span></td>
+              <td><%= s.formatted_time %></td>
+              <td><%= s.questions %></td>
+              <td><%= s.correct %></td>
+              <td><span class="badge badge-success"><%= s.accuracy %></span></td>
+              <td style="display:flex; gap:0.5rem;">
+                <a href="/edit/<%= s.id %>" class="icon-btn" title="Editar" style="width:34px; height:34px;">
+                  <i class="ph-bold ph-pencil-simple"></i>
+                </a>
+                <form action="/delete/<%= s.id %>" method="POST" style="margin:0;" onsubmit="return confirm('Tem certeza que deseja excluir esta sessão?');">
+                  <button type="submit" class="icon-btn" title="Excluir" style="width:34px; height:34px; color:var(--danger); border-color:var(--danger-border);">
+                    <i class="ph-bold ph-trash"></i>
+                  </button>
+                </form>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</section>
+<%- include('partials/foot') %>

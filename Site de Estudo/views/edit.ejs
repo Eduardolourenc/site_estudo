@@ -1,0 +1,53 @@
+<%- include('partials/head') %>
+<section class="page-header">
+  <div>
+    <h1><i class="ph-duotone ph-pencil-simple"></i> Editar sessão</h1>
+    <p>Corrija as informações desta sessão de estudo.</p>
+  </div>
+</section>
+
+<section class="layout-single-col card">
+  <form id="edit-form" action="/edit/<%= session.id %>" method="POST">
+    <div class="form-group">
+      <label for="date"><i class="ph-duotone ph-calendar"></i> Data</label>
+      <input type="date" id="date" name="date" value="<%= session.date %>" required>
+    </div>
+
+    <div class="form-group">
+      <label for="subject_id"><i class="ph-duotone ph-book-open"></i> Matéria</label>
+      <select id="subject_id" name="subject_id" required>
+        <option value="">Selecione...</option>
+        <% subjects.forEach(function(sub) { %>
+          <option value="<%= sub.id %>" <%= sub.id === session.subject_id ? 'selected' : '' %>><%= sub.name %></option>
+        <% }); %>
+      </select>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="hours"><i class="ph-duotone ph-clock"></i> Horas</label>
+        <input type="number" id="hours" name="hours" min="0" step="1" value="<%= Math.floor(session.hours) %>">
+      </div>
+      <div class="form-group">
+        <label for="minutes"><i class="ph-duotone ph-timer"></i> Minutos</label>
+        <input type="number" id="minutes" name="minutes" min="0" max="59" step="1" value="<%= Math.round((session.hours - Math.floor(session.hours)) * 60) %>">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="questions"><i class="ph-duotone ph-list-numbers"></i> Total de questões (opcional)</label>
+      <input type="number" id="questions" name="questions" min="0" value="<%= session.questions %>">
+    </div>
+
+    <div class="form-group">
+      <label for="correct"><i class="ph-duotone ph-check-circle"></i> Acertos (opcional)</label>
+      <input type="number" id="correct" name="correct" min="0" value="<%= session.correct %>">
+    </div>
+
+    <div class="form-row" style="justify-content: space-between; align-items:center;">
+      <button type="submit" class="btn-primary"><i class="ph-bold ph-floppy-disk"></i> Salvar alterações</button>
+      <a href="/history" class="btn-secondary"><i class="ph-bold ph-x"></i> Cancelar</a>
+    </div>
+  </form>
+</section>
+<%- include('partials/foot') %>

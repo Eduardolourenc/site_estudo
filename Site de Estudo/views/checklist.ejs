@@ -1,0 +1,105 @@
+<%- include('partials/head') %>
+<%
+  const pendingTasks = tasks.filter(t => !t.completed);
+  const completedTasks = tasks.filter(t => t.completed);
+  const totalTasks = tasks.length;
+  const donePct = totalTasks > 0 ? Math.round((completedTasks.length / totalTasks) * 100) : 0;
+%>
+<section class="page-header">
+  <div>
+    <h1><i class="ph-duotone ph-check-square"></i> Checklist de estudos</h1>
+    <p>Organize os tópicos e matérias que você deseja estudar com foco total.</p>
+  </div>
+</section>
+
+<% if (totalTasks > 0) { %>
+  <section class="card">
+    <div class="card-header-row">
+      <h2 class="mt-0"><i class="ph-duotone ph-gauge"></i> Progresso geral</h2>
+      <strong><%= completedTasks.length %> de <%= totalTasks %> concluídas (<%= donePct %>%)</strong>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill <%= donePct === 100 ? 'is-complete' : '' %>" style="width: <%= donePct %>%;"></div>
+    </div>
+  </section>
+<% } %>
+
+<section class="card">
+  <form action="/checklist/add" method="POST" class="add-form">
+    <input type="text" name="task" id="task" placeholder="O que você precisa aprender hoje?" required autocomplete="off" />
+    <button type="submit" class="btn-primary"><i class="ph-bold ph-plus"></i> Adicionar</button>
+  </form>
+
+  <div class="checklist-columns">
+    <!-- A FAZER -->
+    <div class="column">
+      <h3 class="section-title">
+        <span><i class="ph-fill ph-target"></i> A fazer</span>
+        <span class="count"><%= pendingTasks.length %></span>
+      </h3>
+      <% if (pendingTasks.length === 0) { %>
+        <p class="hint" style="padding: 1rem 0.5rem;">Nenhuma tarefa pendente. 🎉</p>
+      <% } else { %>
+        <ul class="task-list">
+          <% pendingTasks.forEach(function(task) { %>
+            <li class="task-item">
+              <div class="task-content">
+                <form action="/checklist/toggle" method="POST" style="margin:0;">
+                  <input type="hidden" name="id" value="<%= task.id %>" />
+                  <button type="submit" class="btn-invisible" title="Marcar como concluída">
+                    <i class="ph ph-circle" style="font-size: 1.5rem; color: var(--text-faint);"></i>
+                  </button>
+                </form>
+                <span><%= task.task %></span>
+              </div>
+              <div class="task-actions">
+                <form action="/checklist/delete" method="POST" style="margin:0;">
+                  <input type="hidden" name="id" value="<%= task.id %>" />
+                  <button type="submit" class="btn-invisible" style="color: var(--danger); font-size: 1.3rem;" title="Remover">
+                    <i class="ph-fill ph-trash"></i>
+                  </button>
+                </form>
+              </div>
+            </li>
+          <% }); %>
+        </ul>
+      <% } %>
+    </div>
+
+    <!-- CONCLUÍDAS -->
+    <div class="column">
+      <h3 class="section-title" style="opacity:0.85;">
+        <span><i class="ph-fill ph-check-circle" style="color:var(--success);"></i> Concluídas</span>
+        <span class="count"><%= completedTasks.length %></span>
+      </h3>
+      <% if (completedTasks.length === 0) { %>
+        <p class="hint" style="padding: 1rem 0.5rem;">Você ainda não concluiu nenhuma tarefa.</p>
+      <% } else { %>
+        <ul class="task-list">
+          <% completedTasks.forEach(function(task) { %>
+            <li class="task-item completed">
+              <div class="task-content">
+                <form action="/checklist/toggle" method="POST" style="margin:0;">
+                  <input type="hidden" name="id" value="<%= task.id %>" />
+                  <button type="submit" class="btn-invisible" title="Marcar como pendente">
+                    <i class="ph-fill ph-check-circle" style="font-size: 1.5rem; color: var(--success);"></i>
+                  </button>
+                </form>
+                <span><%= task.task %></span>
+              </div>
+              <div class="task-actions">
+                <form action="/checklist/delete" method="POST" style="margin:0;">
+                  <input type="hidden" name="id" value="<%= task.id %>" />
+                  <button type="submit" class="btn-invisible" style="color: var(--danger); font-size: 1.3rem;" title="Remover">
+                    <i class="ph-fill ph-trash"></i>
+                  </button>
+                </form>
+              </div>
+            </li>
+          <% }); %>
+        </ul>
+      <% } %>
+    </div>
+  </div>
+</section>
+<%- include('partials/foot') %>

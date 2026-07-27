@@ -1,0 +1,151 @@
+﻿require('dotenv').config();
+const { Pool } = require('pg');
+
+// Prioridade: variável de ambiente DATABASE_URL (recomendado, veja .env.example).
+// Mantemos um valor de fallback igual ao que já estava em produção para que a
+// hospedagem atual (Render/Vercel) continue funcionando sem exigir configuração
+// extra imediata. Ainda assim, o ideal é migrar essa credencial para as
+// variáveis de ambiente do provedor e trocar a senha do banco quando possível,
+// já que ela ficou exposta no código-fonte anteriormente.
+const DATABASE_URL = process.env.DATABASE_URL
+  || "postgresql://neondb_owner:npg_t2apTi7gXzEJ@ep-weathered-recipe-annu2ok2-pooler.c-6.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require";
+
+const pool = new Pool({
+  connectionString: DATABASE_URL,
+});
+
+function convertSql(sql) {
+  let paramIndex = 1;
+  return sql
+    .replace(/INSERT OR IGNORE INTO subjects\(name\) VALUES \(\?\)/g, "INSERT INTO subjects (name) VALUES ($1) ON CONFLICT (name) DO NOTHING")
+    .replace(/INSERT OR REPLACE INTO settings \(key, value\) VALUES \(\?, \?\)/g, "INSERT INTO settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value")
+    .replace(/\?/g, () => '$' + (paramIndex++));
+}
+
+function processRow(row) {
+  if (!row) return row;
+  // Convert any stringified floats back to numbers from SUM()
+  if (typeof row.total_hours === 'string') row.total_hours = parseFloat(row.total_hours);
+  if (typeof row.total_questions === 'string') row.total_questions = parseFloat(row.total_questions);
+  if (typeof row.total_correct === 'string') row.total_correct = parseFloat(row.total_correct);
+  if (typeof row.hours === 'string') row.hours = parseFloat(row.hours);
+  return row;
+}
+
+const db = {
+  all: (sql, params, callback) => {
+    if (typeof params === 'function') {
+      callback = params;
+      params = [];
+    }
+    initPromise.then(() => {
+      pool.query(convertSql(sql), params || [])
+        .then(res => callback && callback(null, res.rows.map(processRow)))
+        .catch(err => {
+          console.error("DB.all err:", err, convertSql(sql));
+          callback && callback(err);
+        });
+    });
+  },
+  get: (sql, params, callback) => {
+    if (typeof params === 'function') {
+      callback = params;
+      params = [];
+    }
+    initPromise.then(() => {
+      pool.query(convertSql(sql), params || [])
+        .then(res => callback && callback(null, res.rows[0] ? processRow(res.rows[0]) : null))
+        .catch(err => {
+          console.error("DB.get err:", err, convertSql(sql));
+          callback && callback(err);
+        });
+    });
+  },
+  run: (sql, params, callback) => {
+    if (typeof params === 'function') {
+      callback = params;
+      params = [];
+    }
+    initPromise.then(() => {
+      pool.query(convertSql(sql), params || [])
+        .then(res => callback && callback(null))
+        .catch(err => {
+          console.error("DB.run err:", err, convertSql(sql));
+          callback && callback(err);
+        });
+    });
+  }
+};
+
+const init = async () => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS subjects (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL UNIQUE
+      );
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      );
+    `);
+
+    await pool.query(`
+      INSERT INTO settings (key, value) 
+      VALUES ('daily_goal', '4') 
+      ON CONFLICT (key) DO NOTHING;
+    `);
+
+    // Ensure we don't accidentally get completely locked out from settings
+    await pool.query(`
+      INSERT INTO settings (key, value) 
+      VALUES ('last_goal_date', '1970-01-01') 
+      ON CONFLICT (key) DO NOTHING;
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS study_sessions (
+        id SERIAL PRIMARY KEY,
+        date TEXT NOT NULL,
+        subject_id INTEGER NOT NULL,
+        hours REAL NOT NULL,
+        questions INTEGER NOT NULL,
+        correct INTEGER NOT NULL,
+        FOREIGN KEY (subject_id) REFERENCES subjects(id)
+      );
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS checklist (
+        id SERIAL PRIMARY KEY,
+        task TEXT NOT NULL,
+        completed BOOLEAN DEFAULT false,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Add tracking of daily_goal for historical consistency
+    await pool.query(`
+      ALTER TABLE study_sessions ADD COLUMN IF NOT EXISTS daily_goal REAL;
+    `);
+
+    await pool.query(`
+      UPDATE study_sessions 
+      SET daily_goal = (SELECT CAST(value AS REAL) FROM settings WHERE key = 'daily_goal') 
+      WHERE daily_goal IS NULL;
+    `);
+
+    console.log("Banco de dados Postgres inicializado via Neon!");
+  } catch(e){
+    console.error("Erro ao inicializar DB:", e);
+    throw e;
+  }
+};
+
+const initPromise = init();
+db._initPromise = initPromise;
+
+module.exports = db;

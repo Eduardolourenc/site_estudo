@@ -1,0 +1,165 @@
+<%- include('partials/head') %>
+<%
+  const pct = Math.min(Math.round((todayStats.total_hours / dailyGoal) * 100), 100);
+  const isGoalMet = todayStats.total_hours >= dailyGoal;
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Bom dia' : (hour < 18 ? 'Boa tarde' : 'Boa noite');
+  const maxWeek = Math.max(1, ...weekSeries.map(d => d.hours));
+  const maxBreakdown = Math.max(1, ...breakdown.map(b => b.hours));
+%>
+<section class="page-header">
+  <div>
+    <h1><i class="ph-duotone ph-squares-four"></i> <%= greeting %>! Aqui está seu progresso</h1>
+    <p>Visão geral rápida da sua jornada de estudos.</p>
+  </div>
+  <a href="/study" class="btn-primary"><i class="ph-bold ph-play"></i> Iniciar sessão de estudo</a>
+</section>
+
+<div class="insight-banner">
+  <i class="ph-fill <%= insightIcon %>"></i>
+  <p><%= insight %></p>
+</div>
+
+<section class="cards-grid">
+  <!-- Card de hoje com anel de progresso -->
+  <article class="stat-card stat-card--hero" style="display:flex; align-items:center; gap:1.75rem; flex-wrap:wrap;">
+    <div class="progress-ring-wrap" style="width:132px; height:132px; flex-shrink:0;">
+      <div style="width:132px; height:132px; border-radius:50%; background: conic-gradient(<%= isGoalMet ? 'var(--success)' : 'var(--primary)' %> <%= pct * 3.6 %>deg, color-mix(in srgb, var(--text-main) 8%, transparent) 0);">
+      </div>
+      <div style="position:absolute; width:98px; height:98px; border-radius:50%; background: var(--panel-bg-solid); top:17px; left:17px;"></div>
+      <div class="progress-ring-value">
+        <span style="font-size:1.7rem;"><%= pct %>%</span>
+        <small>da meta</small>
+      </div>
+    </div>
+    <div style="flex:1; min-width:200px;">
+      <h2 style="margin-bottom:0.3rem;">Hoje &middot; meta de <%= dailyGoal %>h</h2>
+      <p class="stat-main"><%= todayHoursFmt %></p>
+      <p class="stat-sub"><%= todayStats.total_questions || 0 %> questões &middot; <%= todayStats.total_correct || 0 %> acertos</p>
+      <div class="progress-track" style="margin-top:0.9rem;">
+        <div class="progress-fill <%= isGoalMet ? 'is-complete' : '' %>" style="width: <%= pct %>%;"></div>
+      </div>
+    </div>
+  </article>
+
+  <article class="stat-card">
+    <div class="stat-icon"><i class="ph-duotone ph-calendar-blank"></i></div>
+    <h2>Últimos 7 dias</h2>
+    <p class="stat-main"><%= weekHours %></p>
+    <p class="stat-sub">Tempo total estudado</p>
+  </article>
+
+  <article class="stat-card">
+    <div class="stat-icon"><i class="ph-duotone ph-calendar"></i></div>
+    <h2>Este mês</h2>
+    <p class="stat-main"><%= monthHours %></p>
+    <p class="stat-sub">Horas no mês atual</p>
+  </article>
+
+  <article class="stat-card">
+    <div class="stat-icon"><i class="ph-duotone ph-clock"></i></div>
+    <h2>Total geral</h2>
+    <p class="stat-main"><%= allTimeHours %></p>
+    <p class="stat-sub"><%= overallAccuracy !== null ? overallAccuracy + '% de aproveitamento' : 'Sem questões registradas' %></p>
+  </article>
+</section>
+
+<section class="layout-two-cols">
+  <!-- Gráfico semanal (barras em CSS puro) -->
+  <article class="card">
+    <h2><i class="ph-duotone ph-chart-bar"></i> Semana em horas</h2>
+    <div style="display:flex; align-items:flex-end; gap:0.6rem; height:150px; padding-top:0.5rem;">
+      <% weekSeries.forEach(function(d) { %>
+        <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:0.5rem; height:100%; justify-content:flex-end;">
+          <span style="font-size:0.68rem; color:var(--text-faint); font-weight:700;"><%= d.hours > 0 ? d.hours.toFixed(1) : '' %></span>
+          <div title="<%= d.label %>: <%= d.hours.toFixed(1) %>h" style="width:100%; max-width:34px; border-radius:8px 8px 4px 4px; background: linear-gradient(180deg, var(--primary), var(--accent)); height: <%= Math.max(4, Math.round((d.hours / maxWeek) * 100)) %>%; transition: height 1s cubic-bezier(.22,1,.36,1);"></div>
+          <span style="font-size:0.72rem; color:var(--text-muted); font-weight:700; text-transform:capitalize;"><%= d.label %></span>
+        </div>
+      <% }); %>
+    </div>
+  </article>
+
+  <!-- Distribuição por matéria no mês -->
+  <article class="card">
+    <h2><i class="ph-duotone ph-chart-pie-slice"></i> Matérias do mês</h2>
+    <% if (breakdown.length === 0) { %>
+      <div class="empty-state" style="padding:1.5rem 0;">
+        <i class="ph-duotone ph-books"></i>
+        <strong>Nada por aqui ainda</strong>
+        <span class="hint">Registre estudos para ver a distribuição por matéria.</span>
+      </div>
+    <% } else { %>
+      <div style="display:flex; flex-direction:column; gap:0.9rem;">
+        <% breakdown.forEach(function(b) { %>
+          <div>
+            <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:0.35rem;">
+              <span class="subject-tag"><span class="subject-dot" style="background:<%= b.color %>;"></span><%= b.name %></span>
+              <strong><%= b.hours.toFixed(1) %>h</strong>
+            </div>
+            <div class="progress-track" style="height:8px;">
+              <div style="height:100%; border-radius:99px; background:<%= b.color %>; width:<%= Math.max(4, Math.round((b.hours / maxBreakdown) * 100)) %>%;"></div>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
+  </article>
+</section>
+
+<!-- Conquistas -->
+<section class="card">
+  <h2><i class="ph-duotone ph-trophy"></i> Conquistas</h2>
+  <div class="cards-grid" style="margin-bottom:0;">
+    <% badges.forEach(function(b) { %>
+      <div class="achievement <%= b.unlocked ? 'unlocked' : 'locked' %>" style="grid-column: span 4;">
+        <span class="ach-icon"><i class="ph-fill <%= b.icon %>"></i></span>
+        <div>
+          <strong><%= b.title %></strong>
+          <span><%= b.desc %></span>
+        </div>
+      </div>
+    <% }); %>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-header-row">
+    <h2><i class="ph-duotone ph-clock-counter-clockwise"></i> Últimos estudos</h2>
+    <a href="/history" class="link-inline">Ver histórico completo <i class="ph-bold ph-arrow-right"></i></a>
+  </div>
+  <% if (sessions.length === 0) { %>
+    <div class="empty-state">
+      <i class="ph-duotone ph-notebook"></i>
+      <strong>Nenhum estudo registrado ainda</strong>
+      <span class="hint">Comece clicando em "Iniciar sessão de estudo".</span>
+    </div>
+  <% } else { %>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Matéria</th>
+            <th>Tempo</th>
+            <th>Questões</th>
+            <th>Acertos</th>
+            <th>Aproveitamento</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% sessions.forEach(function(s) { %>
+            <tr>
+              <td><%= s.date %></td>
+              <td><span class="subject-tag"><span class="subject-dot" style="background:<%= s.color %>;"></span><%= s.subject_name %></span></td>
+              <td><%= s.formatted_time %></td>
+              <td><%= s.questions %></td>
+              <td><%= s.correct %></td>
+              <td><span class="badge badge-success"><%= s.accuracy %></span></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</section>
+<%- include('partials/foot') %>

@@ -1,0 +1,41 @@
+<%- include('partials/head') %>
+<section class="page-header">
+  <div>
+    <h1><i class="ph-duotone ph-gear"></i> Configurações e metas</h1>
+    <p>Ajuste sua meta diária de estudos e personalize a sua experiência.</p>
+  </div>
+</section>
+
+<section class="layout-single-col">
+  <div class="card">
+    <h2><i class="ph-duotone ph-target"></i> Meta diária de estudo</h2>
+    <form action="/settings" method="POST">
+      <div class="form-group">
+        <label for="daily_goal">Horas por dia</label>
+        <input type="number" id="daily_goal" name="daily_goal" min="0.5" max="24" step="0.5" value="<%= goal %>" required>
+        <small>Essa meta alimenta a barra de progresso e o anel do seu Dashboard, além da contagem de ofensiva (streak).</small>
+      </div>
+      <button type="submit" class="btn-primary btn-block"><i class="ph-bold ph-floppy-disk"></i> Salvar configurações</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2><i class="ph-duotone ph-palette"></i> Aparência</h2>
+    <p class="hint" style="margin-bottom:1rem;">Escolha o tema que for mais confortável para os seus olhos durante os estudos. A preferência fica salva neste navegador.</p>
+    <div style="display:flex; gap:0.75rem;">
+      <button type="button" class="btn-secondary" onclick="document.documentElement.removeAttribute('data-theme'); localStorage.setItem('focus-theme','dark'); location.reload();">
+        <i class="ph-fill ph-moon"></i> Tema escuro
+      </button>
+      <button type="button" class="btn-secondary" onclick="document.documentElement.setAttribute('data-theme','light'); localStorage.setItem('focus-theme','light'); location.reload();">
+        <i class="ph-fill ph-sun"></i> Tema claro
+      </button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><i class="ph-duotone ph-database"></i> Seus dados</h2>
+    <p class="hint" style="margin-bottom:1rem;">Baixe uma cópia de segurança do banco de dados sempre que quiser.</p>
+    <a href="/export" class="btn-secondary"><i class="ph-bold ph-download-simple"></i> Baixar backup</a>
+  </div>
+</section>
+<%- include('partials/foot') %>

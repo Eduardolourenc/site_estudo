@@ -1,0 +1,40 @@
+<%- include('partials/head') %>
+<section class="page-header">
+  <div>
+    <h1><i class="ph-duotone ph-books"></i> Matérias</h1>
+    <p>Adicione as disciplinas que você estuda para organizar o foco.</p>
+  </div>
+</section>
+
+<section class="card">
+  <h2><i class="ph-duotone ph-plus-circle"></i> Cadastrar nova</h2>
+  <form method="POST" action="/subjects" class="form-inline">
+    <input type="text" name="name" placeholder="Ex: Matemática, Direito Constitucional..." required style="max-width: 380px;"/>
+    <button type="submit" class="btn-primary"><i class="ph-bold ph-plus"></i> Adicionar</button>
+  </form>
+</section>
+
+<section class="card">
+  <h2><i class="ph-duotone ph-book-bookmark"></i> Minhas matérias</h2>
+  <% if (subjects.length === 0) { %>
+    <div class="empty-state">
+      <i class="ph-duotone ph-books"></i>
+      <strong>Nenhuma matéria cadastrada</strong>
+      <span class="hint">Cadastre a primeira acima para começar a registrar seus estudos.</span>
+    </div>
+  <% } else { %>
+    <div class="cards-grid" style="margin-bottom:0;">
+      <% subjects.forEach(function(s) { %>
+        <article class="stat-card" style="grid-column: span 4; border-left: 3px solid <%= s.color %>;">
+          <div class="subject-tag" style="font-size:1.05rem; margin-bottom:0.6rem;">
+            <span class="subject-dot" style="background:<%= s.color %>; width:12px; height:12px;"></span>
+            <strong><%= s.name %></strong>
+          </div>
+          <p class="stat-sub" style="margin:0;"><%= s.sessions %> <%= s.sessions === 1 ? 'sessão registrada' : 'sessões registradas' %></p>
+          <p class="stat-sub" style="margin-top:0.2rem;"><i class="ph ph-clock"></i> <%= s.hours %> de estudo</p>
+        </article>
+      <% }); %>
+    </div>
+  <% } %>
+</section>
+<%- include('partials/foot') %>

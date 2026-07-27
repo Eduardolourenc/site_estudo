@@ -1,14 +1,11 @@
 ﻿require('dotenv').config();
 const { Pool } = require('pg');
 
-// Prioridade: variável de ambiente DATABASE_URL (recomendado, veja .env.example).
-// Mantemos um valor de fallback igual ao que já estava em produção para que a
-// hospedagem atual (Render/Vercel) continue funcionando sem exigir configuração
-// extra imediata. Ainda assim, o ideal é migrar essa credencial para as
-// variáveis de ambiente do provedor e trocar a senha do banco quando possível,
-// já que ela ficou exposta no código-fonte anteriormente.
-const DATABASE_URL = process.env.DATABASE_URL
-  || "postgresql://neondb_owner:npg_t2apTi7gXzEJ@ep-weathered-recipe-annu2ok2-pooler.c-6.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require";
+const DATABASE_URL = process.env.DATABASE_URL;
+
+if (!DATABASE_URL) {
+  throw new Error('DATABASE_URL não configurada. Crie um banco Postgres novo e informe a connection string nas variáveis de ambiente.');
+}
 
 const pool = new Pool({
   connectionString: DATABASE_URL,
@@ -130,12 +127,6 @@ const init = async () => {
     // Add tracking of daily_goal for historical consistency
     await pool.query(`
       ALTER TABLE study_sessions ADD COLUMN IF NOT EXISTS daily_goal REAL;
-    `);
-
-    await pool.query(`
-      UPDATE study_sessions 
-      SET daily_goal = (SELECT CAST(value AS REAL) FROM settings WHERE key = 'daily_goal') 
-      WHERE daily_goal IS NULL;
     `);
 
     console.log("Banco de dados Postgres inicializado via Neon!");

@@ -521,13 +521,6 @@ router.get('/pomodoro', (req, res) => {
   res.render('pomodoro', { pageTitle: 'Pomodoro' });
 });
 
-// Backup / Exportar BD
-const path = require('path');
-router.get('/export', (req, res) => {
-  const dbPath = process.env.DB_PATH || path.join(__dirname, '..', 'data', 'study-tracker.db');
-  res.download(dbPath, 'backup-study-tracker.db');
-});
-
 // Configurações e Metas
 router.get('/settings', (req, res) => {
   db.get('SELECT value FROM settings WHERE key = ?', ['daily_goal'], (err, row) => {
